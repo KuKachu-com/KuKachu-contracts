@@ -15,7 +15,7 @@ import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 import "./token/BEP20/BEP20.sol";
 
-contract KuKachuBscTest is AccessControl, BEP20, ReentrancyGuard {
+contract KuKachuBsc is AccessControl, BEP20, ReentrancyGuard {
     using Address for address;
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
@@ -61,7 +61,7 @@ contract KuKachuBscTest is AccessControl, BEP20, ReentrancyGuard {
     uint256 private _maxTxAmount;
     uint256 private _maxHolding;
     uint256 private _minTokensToSell;
-    uint256 private constant _COOLDOWN = 2 minutes;//4 hours;
+    uint256 private constant _COOLDOWN = 5 hours;
     bool private _contractRestriction;
 
     // 12% tax
@@ -87,7 +87,7 @@ contract KuKachuBscTest is AccessControl, BEP20, ReentrancyGuard {
     event ClaimedBnb(address recipient, uint256 bnbAmount);
     event CoolDownSet(address account, uint256 time);
 
-    constructor(IUniswapV2Router02 router_, address payable developerAddress_, address payable marketingAddress_, address payable rewardAddress_) BEP20(_name, _symbol){
+    constructor(IUniswapV2Router02 router_, address payable developerAddress_, address payable marketingAddress_, address payable rewardAddress_) BEP20(_name, _symbol) {
         _thisAddress = address(this);
         _devAddress = developerAddress_;
         _marketingAddress = marketingAddress_;
@@ -123,9 +123,9 @@ contract KuKachuBscTest is AccessControl, BEP20, ReentrancyGuard {
      * Trick bots adding LP for different name without the ability to trade
      *
      */
-    function activate() external {
+    function activate() external payable {
         require(!_tokenCreated, 'KuKachu: Token already created');
-        require(_thisAddress.balance >= 1 ether, 'Contract requires a balance of at least 50 BNB to create the token'); 
+        require(_thisAddress.balance >= 50 ether, 'Contract requires a balance of at least 50 BNB to create the token'); 
 
         _tTotal = _INITIAL_BALANCE;
         _rTotal = (_MAX - (_MAX % _tTotal));
@@ -379,7 +379,6 @@ contract KuKachuBscTest is AccessControl, BEP20, ReentrancyGuard {
     }
 
     function _transferStandard(address sender, address recipient, uint256 tAmount) private {
-        require(cooldownOf(sender) <= block.timestamp, "KuKachu: cooldown period for sender"); // REMOVE AFTER TESTING
         (uint256 rAmount, uint256 rTransferAmount, uint256 rDat, uint256 rTotalToSwap, uint256 tTransferAmount,) = _getTxValues(tAmount); 
         (uint256 rBurn, uint256 tBurn) = _getTxBValues(tAmount);
         rTransferAmount = rTransferAmount.sub(rBurn);
@@ -622,8 +621,8 @@ contract KuKachuBscTest is AccessControl, BEP20, ReentrancyGuard {
             if (hasRole(EXCLUDED, sender)) {
                 _transferToPoolNoFees(sender, recipient, amount);
             } else {
-                // TEST change to 1 day (not able to sell the first day)
-                if (!_midSwap) require(block.timestamp >= launchTime() + 5 minutes, "KuKachu: not able to sell the first day"); 
+                // not able to sell the first day
+                if (!_midSwap) require(block.timestamp >= launchTime() + 1 days, "KuKachu: not able to sell the first day"); 
                 _transferToPool(sender, recipient, amount);
             }
         } else {
