@@ -1,3 +1,5 @@
+backup/
+
 *.swp
 *.swo
 
@@ -48,6 +50,7 @@ docs/modules/api
 contracts/build/
 contracts/README.md
 contracts/backup
+
 
 # temporary artifact from solidity-coverage
 allFiredEvents

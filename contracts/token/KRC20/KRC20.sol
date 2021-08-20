@@ -30,7 +30,7 @@ import "@openzeppelin/contracts/utils/Context.sol";
  * functions have been added to mitigate the well-known issues around setting
  * allowances. See {IERC20-approve}.
  */
-contract ERC20 is Context, IERC20, IERC20Metadata {
+contract KRC20 is Context, IERC20, IERC20Metadata {
     mapping(address => uint256) private _balances;
 
     mapping(address => mapping(address => uint256)) private _allowances;
@@ -221,14 +221,19 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
         address recipient,
         uint256 amount
     ) internal virtual {
-        _preValidateTokenTransfer(sender, recipient, amount);
+        require(sender != address(0), "ERC20: transfer from the zero address");
+        require(recipient != address(0), "ERC20: transfer to the zero address");
 
         _beforeTokenTransfer(sender, recipient, amount);
 
-        _processTokenTransfer(sender, recipient, amount);
+        uint256 senderBalance = _balances[sender];
+        require(senderBalance >= amount, "ERC20: transfer amount exceeds balance");
+        unchecked {
+            _balances[sender] = senderBalance - amount;
+        }
+        _balances[recipient] += amount;
 
-        //emit Transfer(sender, recipient, amount);
-        _updateTokenTransfer(sender,recipient, amount);
+        emit Transfer(sender, recipient, amount);
 
         _afterTokenTransfer(sender, recipient, amount);
     }
@@ -308,30 +313,6 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
     }
 
     /**
-    * @dev Validation of an incoming transfer. Use require statements to revert state when conditions are not met.
-    * Use `super` in contracts that inherit from ERC20 to extend their validations.
-    * Example from ERC20.sol's _preValidateTokenTransfer method:
-    *     super._preValidateTokenTransfer(from, to, amount);
-    * @param from Address performing the token transfer
-    * @param to Address where the token sent to
-    * @param amount amount of token sent
-    *
-    * Requirements:
-    *
-    * - `beneficiary` cannot be the zero address.
-    * - the caller must have a balance of at least `amount`.
-    */
-    function _preValidateTokenTransfer(
-         address from,
-        address to,
-        uint256 amount
-    ) internal virtual {
-        require(from != address(0), "ERC20: transfer from the zero address");
-        require(to != address(0), "ERC20: transfer to the zero address");
-        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
-    }
-    
-    /**
      * @dev Hook that is called before any transfer of tokens. This includes
      * minting and burning.
      *
@@ -346,39 +327,6 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
      * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
      */
     function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal virtual {}
-
-    /**
-    * @dev Executed when a deposit has been validated and is ready to be executed. Doesn't necessarily emit/send
-    * tokens.
-    * @param from The sender of the token
-    * @param to the receiver of the token
-    * @param amount Number of tokens transfer
-    */
-    function _processTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal virtual {
-        uint256 senderBalance = _balances[from];
-        require(senderBalance >= amount, "ERC20: transfer amount exceeds balance");
-        unchecked {
-            _balances[from] = senderBalance - amount;
-        }
-        _balances[from] += amount;
-    }
-
-    /**
-    * @dev Override for extensions that require an internal state to check for validity (current user contributions,
-    * etc.)
-    * @param from The sender of the token
-    * @param to Address performing the token transfer
-    * @param amount Number of tokens transfer
-    */
-    function _updateTokenTransfer(
         address from,
         address to,
         uint256 amount
@@ -403,4 +351,12 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
         address to,
         uint256 amount
     ) internal virtual {}
+
+    function _setName(string memory name_) internal {
+        _name = name_;
+    }
+
+    function _setSymbol(string memory symbol_) internal {
+        _symbol = symbol_;
+    }
 }
